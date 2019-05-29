@@ -1,0 +1,3 @@
+http://www.makelinux.net/ldd3/chp-6-sect-2
+
+driver唤醒机制

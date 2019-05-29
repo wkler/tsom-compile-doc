@@ -1,0 +1,15 @@
+如何制作内核头文件
+
+
+
+make mrproper
+make ARCH=arm headers_check
+sudo make ARCH=arm INSTALL_HDR_PATH=/usr/src/de10-headers/ headers_install
+
+
+#cd to the top directory of the kernel source
+cd linux-3.9
+make mrproper
+make ARCH=arm integrator_defconfig
+make ARCH=arm headers_check
+make ARCH=arm INSTALL_HDR_PATH=$SOMEWHERE headers_instal

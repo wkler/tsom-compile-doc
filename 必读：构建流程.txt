@@ -1,0 +1,94 @@
+
+编译一个linux内核，并加入想要的驱动程序：
+来自terasic的技术支持邮件：
+
+如果您希望获得内核模块配置文件，请您先在TSOM上运行Linux, 当Linux跑起来后，可以在 /proc/config.gz 找的目前使用的kernel config file。 请您尝试！
+由于altera把4.5版的source code移除了，请您改用以下指令下載Linux 源码：
+  git clone https://github.com/terasic/linux-socfpga.git
+  git checkout 3bb556b -b console
+
+
+++ sudo needed  
+  
+make ARCH=arm CROSS_COMPILE=~/gcc-linaro-arm-linux-gnueabihf-4.8-2014.04_linux/bin/arm-linux-gnueabihf- mrproper
+
+make ARCH=arm CROSS_COMPILE=~/gcc-linaro-arm-linux-gnueabihf-4.8-2014.04_linux/bin/arm-linux-gnueabihf- help
+
+///////  cp  tsom_defconfig ./.config
+
+make ARCH=arm CROSS_COMPILE=~/gcc-linaro-arm-linux-gnueabihf-4.8-2014.04_linux/bin/arm-linux-gnueabihf- tsom_defconfig
+
+make ARCH=arm CROSS_COMPILE=~/gcc-linaro-arm-linux-gnueabihf-4.8-2014.04_linux/bin/arm-linux-gnueabihf- scripts
+
+make ARCH=arm CROSS_COMPILE=~/gcc-linaro-arm-linux-gnueabihf-4.8-2014.04_linux/bin/arm-linux-gnueabihf- oldconfig
+
+////////  make ARCH=arm CROSS_COMPILE=~/gcc-linaro-arm-linux-gnueabihf-4.8-2014.04_linux/bin/arm-linux-gnueabihf- menuconfig
+
+make ARCH=arm CROSS_COMPILE=~/gcc-linaro-arm-linux-gnueabihf-4.8-2014.04_linux/bin/arm-linux-gnueabihf- zImage
+
+////////  make -j4 ARCH=arm CROSS_COMPILE=~/gcc-linaro-arm-linux-gnueabihf-4.8-2014.04_linux/bin/arm-linux-gnueabihf- -k
+
+
+
+
+编译Uboot：
+Building U-Boot
+
+第一种方法：（没测试过，不知道行不行）
+This section presents instructions on how to clone the U-boot git tree and compile U-boot. It assumes that you have manually downloaded the build toolchain.
+
+////////$ cd ~
+////////$ git clone http://github.com/altera-opensource/u-boot-socfpga
+////////$ cd u-boot-socfpga
+////////$ git checkout -b test_branch TAG # Please refer build tag from reference page
+$ export ARCH=arm CROSS_COMPILE=~/gcc-linaro-arm-linux-gnueabihf-4.8-2014.04_linux/bin/arm-linux-gnueabihf-
+$ make ARCH=arm CROSS_COMPILE=~/gcc-linaro-arm-linux-gnueabihf-4.8-2014.04_linux/bin/arm-linux-gnueabihf- mrproper
+$ make ARCH=arm CROSS_COMPILE=~/gcc-linaro-arm-linux-gnueabihf-4.8-2014.04_linux/bin/arm-linux-gnueabihf- socfpga_cyclone5_config  //socfpga_cyclone5 ????
+# Replace with socfpga_arria10_config or socfpga_arria5_config if you are building for different target platform
+$ make ARCH=arm CROSS_COMPILE=~/gcc-linaro-arm-linux-gnueabihf-4.8-2014.04_linux/bin/arm-linux-gnueabihf-
+
+
+
+make ARCH=arm CROSS_COMPILE=~/gcc-linaro-arm-linux-gnueabihf-4.8-2014.04_linux/bin/arm-linux-gnueabihf- distclean
+make ARCH=arm CROSS_COMPILE=~/gcc-linaro-arm-linux-gnueabihf-4.8-2014.04_linux/bin/arm-linux-gnueabihf- socfpga_cyclone5_config 
+make ARCH=arm CROSS_COMPILE=~/gcc-linaro-arm-linux-gnueabihf-4.8-2014.04_linux/bin/arm-linux-gnueabihf- -j4
+
+第二种方法： 
+直接使用EDS make uboot 工具！！ 效果可用。
+
+
+
+创建一个SD卡镜像 ：
+
+
+$ mkdir rootfs
+$ cd  rootfs
+$ sudo tar xzf ../rootfs_angstrom_backup.tar.gz
+
+
+$ cd ~/CrateSD
+$ sudo ./make_sdimage.py  \
+  -f \
+  -P preloader-mkpimage.bin,u-boot.img,num=3,format=raw,size=10M,type=A2  \
+  -P rootfs/*,num=2,format=ext4,size=1500M  \
+  -P zImage,u-boot.scr,TSOM_top.rbf,soc_system.dtb,num=1,format=vfat,size=500M  \
+  -s 2G  \
+  -n sd_card_TSOM_image_cyclone5.bin
+  
+  
+  
+
+//////uboot的启动脚本命令
+
+fatload mmc 0:1 $fpgadata TSOM_top.rbf;
+fpga load 0 $fpgadata $filesize;
+setenv fdtimage soc_system.dtb;
+run bridge_enable_handoff;
+run mmcload;
+run mmcboot;
+
+转换工具使用：
+$ ./quartus_cpf -c /e/火狐浏览器下载目录/TSOM_v.1.0.0_SystemCD/Demonstration/SoC_FPGA/TSOM_GHRD/output_files/TSOM_top.sof /e/火狐浏览器下载目录/TSOM_v.1.0.0_SystemCD/Demonstration/SoC_FPGA/TSOM_GHRD/output_files/TSOM_top_cli.rbf
+
+
+使用GUI converter工具 在quartus ii 里启动，选择转换格式X16 然后选择压缩.rbf文件内容，然后再拷贝到sd卡的fat文件系统里面。
